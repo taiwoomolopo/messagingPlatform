@@ -1,0 +1,12 @@
+{
+  "name": "messaging-platform",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev:engine": "npm run dev --workspace=services/engine",
+    "dev:portal": "npm run dev --workspace=apps/portal"
+  }
+}
