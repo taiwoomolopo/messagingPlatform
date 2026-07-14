@@ -134,8 +134,11 @@ this scaffold.
   `/v1/portal/messages/blast`), both going through one shared `sendMessage` service so pricing
   and routing behave identically regardless of entry point
 - Routing/scoring engine, all four provider adapters (send + delivery-report parsing)
-- Scheduled job refreshing each provider's real delivery/failure rate (from message history)
-  and cost (live for Twilio, manual entry for the rest) into `provider_metrics`
+- Metrics job refreshing each provider's real delivery/failure rate (from message history) and
+  cost (live for Twilio, manual entry for the rest) into `provider_metrics` — triggered by
+  GitHub Actions cron by default (`.github/workflows/refresh-metrics.yml`), so it works on
+  serverless/free-tier hosting; an in-process timer is available as an opt-in alternative
+  (`ENABLE_INTERNAL_SCHEDULER=true`) for always-on plans
 - Webhook ingestion with verification: real HMAC signature check for Twilio, secret-path-segment
   check for the other three (see `src/middleware/webhookVerification.ts` for why the split)
 - Self-signup → pending account → admin approval (sets pricing) → active, plus direct

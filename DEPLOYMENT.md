@@ -101,6 +101,26 @@ git push
    redeploy (Railway does this automatically when you change a variable)
 7. Test it's alive: visit `https://your-engine-url.up.railway.app/health` — should return `{"ok":true}`
 
+### If you're starting on Railway's free plan
+
+Free plan services are serverless — they sleep between requests instead of running
+continuously. That's fine for send/portal/admin requests (those are request/response anyway),
+but it means the engine can't rely on an in-process timer to keep `provider_metrics` fresh.
+
+Instead, this repo triggers that refresh externally via GitHub Actions (already set up in
+`.github/workflows/refresh-metrics.yml`, runs every 10 minutes). Turn it on:
+
+1. GitHub repo → Settings → Secrets and variables → Actions → New repository secret, add:
+   - `ENGINE_URL` — your Railway URL from step 5 above
+   - `INTERNAL_ADMIN_SECRET` — the same value you set on Railway
+2. That's it — the workflow is already committed and will start running on its schedule.
+   Check it under the repo's **Actions** tab; you can also click **Run workflow** there to
+   trigger it manually and confirm it works.
+
+If you later move to an always-on Railway plan and would rather not depend on GitHub Actions,
+set `ENABLE_INTERNAL_SCHEDULER=true` in Railway's variables instead — that switches the engine
+back to refreshing metrics on its own internal timer.
+
 ---
 
 ## 5. Deploy the portal to Vercel

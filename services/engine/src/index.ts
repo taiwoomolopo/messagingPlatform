@@ -49,8 +49,16 @@ app.listen(PORT, () => {
   console.log(`Engine service listening on port ${PORT}`);
 });
 
-const REFRESH_INTERVAL_MS = Number(process.env.METRICS_REFRESH_INTERVAL_MS ?? 5 * 60 * 1000);
-
+/**
+ * On a serverless/free-tier host (e.g. Railway's free plan), the process sleeps between
+ * requests — a setInterval here would silently stop firing once that happens. Metrics refresh
+ * is instead triggered externally on a schedule by default (see
+ * .github/workflows/refresh-metrics.yml), which hits POST /internal/refresh-metrics and works
+ * the same whether the service is always-on or serverless.
+ *
+ * If you're on an always-on plan and would rather not depend on GitHub Actions, set
+ * ENABLE_INTERNAL_SCHEDULER=true to fall back to the in-process timer instead.
+ */
 async function runScheduledRefresh() {
   try {
     const results = await refreshProviderMetrics();
@@ -63,5 +71,14 @@ async function runScheduledRefresh() {
   }
 }
 
+// Always run once on boot, regardless of scheduler mode — cheap, and means a fresh deploy
+// doesn't start with completely empty provider_metrics.
 runScheduledRefresh();
-setInterval(runScheduledRefresh, REFRESH_INTERVAL_MS);
+
+if (process.env.ENABLE_INTERNAL_SCHEDULER === "true") {
+  const REFRESH_INTERVAL_MS = Number(process.env.METRICS_REFRESH_INTERVAL_MS ?? 5 * 60 * 1000);
+  setInterval(runScheduledRefresh, REFRESH_INTERVAL_MS);
+  console.log(`[metrics] internal scheduler enabled, refreshing every ${REFRESH_INTERVAL_MS}ms`);
+} else {
+  console.log("[metrics] internal scheduler disabled — relying on external cron hitting /internal/refresh-metrics");
+}

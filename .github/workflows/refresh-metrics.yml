@@ -1,0 +1,30 @@
+name: Refresh provider metrics
+
+# Runs on a schedule so provider_metrics stays current even when the engine is deployed on a
+# serverless/free-tier host that sleeps between requests (see the comment in
+# services/engine/src/index.ts for why this replaced an in-process setInterval).
+#
+# Requires two repo secrets (Settings → Secrets and variables → Actions):
+#   ENGINE_URL             e.g. https://your-engine.up.railway.app
+#   INTERNAL_ADMIN_SECRET  must match the same value set on the engine's host
+
+on:
+  schedule:
+    - cron: "*/10 * * * *" # every 10 minutes
+  workflow_dispatch: {} # lets you trigger it manually from the Actions tab too
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Call /internal/refresh-metrics
+        run: |
+          response=$(curl -s -o /tmp/response.json -w "%{http_code}" \
+            -X POST "${{ secrets.ENGINE_URL }}/internal/refresh-metrics" \
+            -H "x-internal-secret: ${{ secrets.INTERNAL_ADMIN_SECRET }}")
+          echo "HTTP status: $response"
+          cat /tmp/response.json
+          if [ "$response" -ge 300 ]; then
+            echo "Refresh failed"
+            exit 1
+          fi
