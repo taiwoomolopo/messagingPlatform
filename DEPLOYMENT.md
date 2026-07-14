@@ -61,8 +61,19 @@ git push
 
 ## 3. Supabase — the database
 
-1. supabase.com → New project → pick a name, region (choose one close to Nigeria/Europe for
-   lower latency), and a strong database password (save it somewhere)
+1. supabase.com → New project → pick a name, and a strong database password (save it
+   somewhere — you won't see it again, and you'll need it if you ever connect directly to
+   Postgres rather than through the JS client)
+   - **Region**: Frankfurt (Central EU) is a solid choice for Nigeria — no African region is
+     offered yet, and Frankfurt/London are the lowest-latency options available
+   - **Enable Data API**: leave checked (required — this is what `@supabase/supabase-js` talks to)
+   - **Automatically expose new tables**: **uncheck this**. Our schema explicitly manages RLS
+     per table in the migrations below; auto-exposing new tables works against that, and — as
+     it turns out — three tables (`providers`, `provider_metrics`, `platform_admins`) shipped
+     without RLS enabled, which combined with this setting would let anyone with your public
+     `anon` key read provider identity and cost data. Migration `0005` below closes that gap
+     regardless, but leave this off anyway as a second layer of protection.
+   - **Enable automatic RLS**: check this — free safety net for any table added later
 2. Once it's provisioned: left sidebar → **SQL Editor** → New query
 3. Run each migration file **in order** — copy-paste the contents of each into the editor and
    click Run:
@@ -70,6 +81,7 @@ git push
    - `supabase/migrations/0002_auth_and_pricing.sql`
    - `supabase/migrations/0003_pending_accounts.sql`
    - `supabase/migrations/0004_traffic_rpc.sql`
+   - `supabase/migrations/0005_lock_down_internal_tables.sql`
 4. Left sidebar → **Project Settings → API**. Copy these three values, you'll need them below:
    - **Project URL**
    - **anon public** key
