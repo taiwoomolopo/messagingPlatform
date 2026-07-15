@@ -9,6 +9,7 @@ import { apiKeyAuth } from "./middleware/auth.js";
 import { portalAuth } from "./middleware/portalAuth.js";
 import { adminAuth } from "./middleware/adminAuth.js";
 import { refreshProviderMetrics } from "./jobs/refreshProviderMetrics.js";
+import { extractErrorMessage } from "./utils/errors.js";
 
 const app = express();
 
@@ -40,7 +41,8 @@ app.post("/internal/refresh-metrics", async (req, res) => {
     const results = await refreshProviderMetrics();
     res.json({ ok: true, results });
   } catch (err) {
-    res.status(500).json({ ok: false, error: err instanceof Error ? err.message : "unknown error" });
+    console.error("[refresh-metrics] failed:", err);
+    res.status(500).json({ ok: false, error: extractErrorMessage(err) });
   }
 });
 
