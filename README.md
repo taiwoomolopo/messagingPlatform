@@ -144,7 +144,13 @@ this scaffold.
 - Self-signup → pending account → admin approval (sets pricing) → active, plus direct
   admin-provisioned account creation
 - Admin dashboard: approve sign-ups, view all accounts/users, total platform traffic, cost/margin
-  breakdown
+  breakdown, and a filterable Logs screen (`/admin/logs`) for investigating a specific client
+- Structured logging (`src/utils/logger.ts`) at every meaningful decision point (send
+  succeeded/rejected/failed, webhook ingestion, metrics refresh) — writes to console (captured
+  by Railway/Vercel automatically), a Supabase `logs` table tagged per `account_id` (the real
+  persistent per-client record), and optionally a local `logs/<accountId>/` folder for dev only
+  (`LOG_TO_FILE=true` — does not persist on Railway/Vercel's ephemeral filesystems, see
+  `DEPLOYMENT.md` §8b)
 - Customer portal: login, signup, traffic overview with delivery/failure rate, single send,
   blast send, CSV report export, sender request/list
 

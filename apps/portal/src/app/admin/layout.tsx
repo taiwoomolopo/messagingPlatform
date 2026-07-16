@@ -4,12 +4,15 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
 import { LogOut } from "lucide-react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { Brand } from "@/components/Brand";
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     const supabase = createClient();
@@ -49,22 +52,32 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           background: "var(--surface)",
         }}
       >
-        <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink)" }}>
-          <Brand size={18} />
-          <span
-            style={{
-              fontSize: 11,
-              fontWeight: 600,
-              letterSpacing: "0.04em",
-              color: "var(--accent-ink)",
-              background: "#e4f7f1",
-              padding: "2px 8px",
-              borderRadius: 999,
-              textTransform: "uppercase",
-            }}
-          >
-            Admin
-          </span>
+        <div style={{ display: "flex", alignItems: "center", gap: 24 }}>
+          <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink)" }}>
+            <Brand size={18} />
+            <span
+              style={{
+                fontSize: 11,
+                fontWeight: 600,
+                letterSpacing: "0.04em",
+                color: "var(--accent-ink)",
+                background: "#e4f7f1",
+                padding: "2px 8px",
+                borderRadius: 999,
+                textTransform: "uppercase",
+              }}
+            >
+              Admin
+            </span>
+          </div>
+          <div style={{ display: "flex", gap: 4 }}>
+            <Link href="/admin" className={`sidebar-link ${pathname === "/admin" ? "active" : ""}`} style={{ color: pathname === "/admin" ? "var(--ink)" : "var(--ink-muted)", background: pathname === "/admin" ? "var(--border)" : "transparent" }}>
+              Accounts
+            </Link>
+            <Link href="/admin/logs" className={`sidebar-link ${pathname === "/admin/logs" ? "active" : ""}`} style={{ color: pathname === "/admin/logs" ? "var(--ink)" : "var(--ink-muted)", background: pathname === "/admin/logs" ? "var(--border)" : "transparent" }}>
+              Logs
+            </Link>
+          </div>
         </div>
         <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
           {email && <span style={{ color: "var(--ink-muted)", fontSize: 13.5 }}>{email}</span>}

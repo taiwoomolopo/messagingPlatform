@@ -2,6 +2,7 @@ import { supabase } from "../db/supabaseClient.js";
 import { getLatestProviderMetrics } from "../db/providerMetrics.js";
 import { pickBestProvider } from "../routing/scorer.js";
 import { getAdapter } from "../adapters/index.js";
+import { logEvent } from "../utils/logger.js";
 
 export interface SendMessageInput {
   accountId: string;
@@ -33,12 +34,24 @@ export async function sendMessage(input: SendMessageInput): Promise<SendMessageO
     .eq("id", accountId)
     .single();
 
-  if (accountError || !account) return { ok: false, error: "account_not_found" };
-  if (account.status !== "active") return { ok: false, error: "account_not_active" };
-  if (account.agreed_rate_per_sms === null) return { ok: false, error: "account_missing_rate" };
+  if (accountError || !account) {
+    await logEvent({ level: "warn", event: "message.send.rejected", message: "Account not found", accountId, meta: { source } });
+    return { ok: false, error: "account_not_found" };
+  }
+  if (account.status !== "active") {
+    await logEvent({ level: "warn", event: "message.send.rejected", message: "Account not active", accountId, meta: { source, status: account.status } });
+    return { ok: false, error: "account_not_active" };
+  }
+  if (account.agreed_rate_per_sms === null) {
+    await logEvent({ level: "warn", event: "message.send.rejected", message: "Account has no agreed rate set", accountId, meta: { source } });
+    return { ok: false, error: "account_missing_rate" };
+  }
 
   const candidates = await getLatestProviderMetrics();
-  if (candidates.length === 0) return { ok: false, error: "no_providers_available" };
+  if (candidates.length === 0) {
+    await logEvent({ level: "error", event: "message.send.no_providers", message: "No provider metrics available to route through", accountId, meta: { source } });
+    return { ok: false, error: "no_providers_available" };
+  }
   const chosen = pickBestProvider(candidates);
 
   let fromLabel = process.env.DEFAULT_SENDER_ID ?? "Platform";
@@ -68,7 +81,10 @@ export async function sendMessage(input: SendMessageInput): Promise<SendMessageO
     .select("id")
     .single();
 
-  if (insertError || !messageRow) return { ok: false, error: "failed_to_record_message" };
+  if (insertError || !messageRow) {
+    await logEvent({ level: "error", event: "message.send.record_failed", message: "Failed to insert message row", accountId, meta: { source, error: insertError?.message } });
+    return { ok: false, error: "failed_to_record_message" };
+  }
 
   const adapter = getAdapter(chosen.providerCode);
   const result = await adapter.send({ to, from: fromLabel, body, accountId, senderId, reference });
@@ -97,6 +113,21 @@ export async function sendMessage(input: SendMessageInput): Promise<SendMessageO
       provider_id: providerRow?.id ?? null,
       agreed_cost: account.agreed_rate_per_sms,
       actual_cost: chosen.costPerSms,
+    });
+    await logEvent({
+      level: "info",
+      event: "message.send.succeeded",
+      message: "Message sent",
+      accountId,
+      meta: { source, provider: chosen.providerCode, messageId: messageRow.id },
+    });
+  } else {
+    await logEvent({
+      level: "error",
+      event: "message.send.failed",
+      message: result.errorMessage ?? "Provider send failed",
+      accountId,
+      meta: { source, provider: chosen.providerCode, messageId: messageRow.id, errorCode: result.errorCode },
     });
   }
 

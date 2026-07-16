@@ -69,7 +69,28 @@ adminRouter.post("/v1/admin/accounts/:id/approve", async (req, res) => {
   return res.json({ account: data });
 });
 
-/** GET /v1/admin/users — every user across every account, with which account they belong to. */
+/**
+ * GET /v1/admin/logs — recent log entries, optionally filtered to one account. This is the
+ * practical "per-client folder" for investigation: query ?accountId=<id> to see everything
+ * logged for that business specifically, across sends, webhooks, and rejections.
+ */
+adminRouter.get("/v1/admin/logs", async (req, res) => {
+  const accountId = typeof req.query.accountId === "string" ? req.query.accountId : undefined;
+  const level = typeof req.query.level === "string" ? req.query.level : undefined;
+
+  let query = supabase
+    .from("logs")
+    .select("id, account_id, level, event, message, meta, created_at")
+    .order("created_at", { ascending: false })
+    .limit(200);
+
+  if (accountId) query = query.eq("account_id", accountId);
+  if (level) query = query.eq("level", level);
+
+  const { data, error } = await query;
+  if (error) return res.status(500).json({ error: "failed_to_load_logs" });
+  return res.json({ logs: data });
+});
 adminRouter.get("/v1/admin/users", async (_req, res) => {
   const { data, error } = await supabase
     .from("account_users")

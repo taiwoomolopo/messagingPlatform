@@ -1,5 +1,6 @@
 import { supabase } from "../db/supabaseClient.js";
 import { getAdapter } from "../adapters/index.js";
+import { logEvent } from "../utils/logger.js";
 
 // How many of each provider's most recent messages to look at when computing delivery/failure
 // rate. A count-based window (rather than a fixed time window) keeps this meaningful for both
@@ -40,6 +41,14 @@ export async function refreshProviderMetrics(): Promise<RefreshResult[]> {
     const result = await refreshOneProvider(provider);
     results.push(result);
   }
+
+  const skipped = results.filter((r) => r.skipped);
+  await logEvent({
+    level: skipped.length > 0 ? "warn" : "info",
+    event: "metrics.refresh_completed",
+    message: `Refreshed ${results.length - skipped.length}/${results.length} providers`,
+    meta: { results },
+  });
 
   return results;
 }

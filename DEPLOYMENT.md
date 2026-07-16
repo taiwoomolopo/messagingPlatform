@@ -82,6 +82,8 @@ git push
    - `supabase/migrations/0003_pending_accounts.sql`
    - `supabase/migrations/0004_traffic_rpc.sql`
    - `supabase/migrations/0005_lock_down_internal_tables.sql`
+   - `supabase/migrations/0006_grants.sql`
+   - `supabase/migrations/0007_logs.sql`
 4. Left sidebar → **Project Settings → API**. Copy these three values, you'll need them below:
    - **Project URL**
    - **anon public** key
@@ -195,6 +197,25 @@ in each provider's dashboard once you have those accounts.)
    you put on Railway, in a local `.env`)
 2. Send a real test message via `curl` against your Railway URL instead of `localhost:4000`
 3. Or: log in to your deployed portal, go to Send, send yourself a message
+
+---
+
+## 8b. Where to look when something goes wrong
+
+Three layers, from quick-glance to per-client detail:
+
+1. **Railway → Deploy/Runtime Logs** and **Vercel → Logs tab** — every request and error is
+   logged as a structured JSON line automatically, no setup needed. Good for "is anything on
+   fire right now."
+2. **Admin portal → Logs** (`/admin/logs`) — the practical per-client view. Filter by Account ID
+   to see everything logged for one business specifically: rejected sends, provider failures,
+   unmatched webhooks. This reads from a `logs` table in Supabase (migration `0007_logs.sql`),
+   so it survives restarts/redeploys, unlike anything written to local disk on these hosts.
+3. **Local `logs/<accountId>/<date>.log` files** — only if you set `LOG_TO_FILE=true` while
+   running the engine on your own laptop. Genuinely useful for local debugging, but this does
+   **not** persist on Railway or Vercel — both run ephemeral filesystems that reset on every
+   deploy/restart/scale event, so don't rely on this in any deployed environment. Leave it
+   `false` (default) there.
 
 ---
 
