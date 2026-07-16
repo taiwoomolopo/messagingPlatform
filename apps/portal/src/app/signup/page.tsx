@@ -19,7 +19,17 @@ export default function SignupPage() {
     setError(null);
 
     const supabase = createClient();
-    const { data, error: signUpError } = await supabase.auth.signUp({ email, password });
+    const { data, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        // Uses whatever origin the signup form is actually running on — localhost in dev,
+        // the real Vercel URL in production — so this doesn't need per-environment code
+        // changes. Still requires that origin to be in Supabase's Redirect URLs allow list
+        // (Authentication → URL Configuration), or Supabase will reject the redirect.
+        emailRedirectTo: `${window.location.origin}/auth/callback`,
+      },
+    });
 
     if (signUpError || !data.user) {
       setLoading(false);

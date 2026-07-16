@@ -148,6 +148,19 @@ back to refreshing metrics on its own internal timer.
 
 ---
 
+## 5b. Point Supabase Auth at your real domain
+
+Without this, Supabase's signup confirmation emails link back to `localhost:3000` no matter
+where the portal is actually deployed — this genuinely happened during testing, so don't skip it.
+
+Supabase → Authentication → URL Configuration:
+- **Site URL** → your Vercel URL from step 5 (e.g. `https://messaging-platform.vercel.app`)
+- **Redirect URLs** (allow list) → add both:
+  - `https://messaging-platform.vercel.app/**`
+  - `http://localhost:3000/**` (keeps local dev signups working too)
+
+---
+
 ## 6. Create your platform admin account
 
 1. Visit your deployed portal → **Sign up** → create your own login
