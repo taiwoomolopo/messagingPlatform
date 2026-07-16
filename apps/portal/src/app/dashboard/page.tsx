@@ -10,19 +10,18 @@ type MessageRow = {
   created_at: string;
 };
 
-/**
- * Traffic overview: recent messages plus summary stats (total sent, delivery rate, failure
- * rate), all computed from data the RLS policies already scope to the logged-in account.
- * Deliberately doesn't select provider_id — customers don't see which provider handled a
- * message (Section 2.5 of the concept doc).
- */
+function StatusBadge({ status }: { status: string }) {
+  const variant =
+    status === "delivered" ? "badge-success" : status === "failed" || status === "undelivered" ? "badge-danger" : "badge-neutral";
+  return <span className={`badge ${variant}`}>{status}</span>;
+}
+
 export default function DashboardPage() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const supabase = createClient();
-
     supabase
       .from("messages")
       .select("id, to_number, status, created_at")
@@ -41,46 +40,61 @@ export default function DashboardPage() {
   const failureRate = total > 0 ? ((failed / total) * 100).toFixed(1) : "—";
 
   return (
-    <main style={{ padding: 48 }}>
-      <h1>Traffic</h1>
-
-      <div style={{ display: "flex", gap: 32, marginBottom: 32 }}>
-        <Stat label="Messages (last 100)" value={String(total)} />
-        <Stat label="Delivery rate" value={`${deliveryRate}%`} />
-        <Stat label="Failure rate" value={`${failureRate}%`} />
+    <>
+      <div className="page-header">
+        <div>
+          <h1>Traffic</h1>
+          <p className="page-subtitle">Recent activity across your account</p>
+        </div>
       </div>
 
-      {loading && <p>Loading…</p>}
-      {!loading && messages.length === 0 && <p>No messages sent yet.</p>}
-      {!loading && messages.length > 0 && (
-        <table cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-              <th>To</th>
-              <th>Status</th>
-              <th>Sent at</th>
-            </tr>
-          </thead>
-          <tbody>
-            {messages.map((m) => (
-              <tr key={m.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td>{m.to_number}</td>
-                <td>{m.status}</td>
-                <td>{new Date(m.created_at).toLocaleString()}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </main>
-  );
-}
+      <div className="stat-row">
+        <div className="stat-card">
+          <div className="stat-label">Messages (last 100)</div>
+          <div className="stat-value">{total}</div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Delivery rate</div>
+          <div className="stat-value" style={{ color: "var(--accent-hover)" }}>
+            {deliveryRate}%
+          </div>
+        </div>
+        <div className="stat-card">
+          <div className="stat-label">Failure rate</div>
+          <div className="stat-value" style={{ color: failed > 0 ? "var(--danger)" : "inherit" }}>
+            {failureRate}%
+          </div>
+        </div>
+      </div>
 
-function Stat({ label, value }: { label: string; value: string }) {
-  return (
-    <div style={{ border: "1px solid #ddd", borderRadius: 8, padding: 16, minWidth: 160 }}>
-      <div style={{ fontSize: 13, color: "#666" }}>{label}</div>
-      <div style={{ fontSize: 28, fontWeight: "bold" }}>{value}</div>
-    </div>
+      <div className="table-wrap">
+        {loading && <div className="empty-state">Loading…</div>}
+        {!loading && messages.length === 0 && (
+          <div className="empty-state">No messages sent yet — try the Send page to send your first one.</div>
+        )}
+        {!loading && messages.length > 0 && (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>To</th>
+                <th>Status</th>
+                <th>Sent at</th>
+              </tr>
+            </thead>
+            <tbody>
+              {messages.map((m) => (
+                <tr key={m.id}>
+                  <td className="mono">{m.to_number}</td>
+                  <td>
+                    <StatusBadge status={m.status} />
+                  </td>
+                  <td className="mono">{new Date(m.created_at).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
   );
 }

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Download } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 import { callEngine } from "@/lib/engineClient";
 
@@ -12,11 +13,12 @@ type MessageRow = {
   created_at: string;
 };
 
-/**
- * Historical message data + export. The table reads directly from Supabase (RLS-scoped, so
- * only this account's rows come back). Export goes through the engine so CSV formatting stays
- * server-side rather than pulling in a client-side CSV library for one button.
- */
+function StatusBadge({ status }: { status: string }) {
+  const variant =
+    status === "delivered" ? "badge-success" : status === "failed" || status === "undelivered" ? "badge-danger" : "badge-neutral";
+  return <span className={`badge ${variant}`}>{status}</span>;
+}
+
 export default function ReportsPage() {
   const [messages, setMessages] = useState<MessageRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,39 +58,47 @@ export default function ReportsPage() {
   }
 
   return (
-    <main style={{ padding: 48 }}>
-      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-        <h1>Reports</h1>
-        <button onClick={handleExport} disabled={exporting} style={{ padding: "8px 16px" }}>
+    <>
+      <div className="page-header">
+        <div>
+          <h1>Reports</h1>
+          <p className="page-subtitle">Historical message data for your account</p>
+        </div>
+        <button onClick={handleExport} disabled={exporting} className="btn btn-secondary">
+          <Download size={15} />
           {exporting ? "Exporting…" : "Export CSV"}
         </button>
       </div>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      {error && <div className="alert alert-danger">{error}</div>}
 
-      {loading && <p>Loading…</p>}
-      {!loading && messages.length === 0 && <p>No messages sent yet.</p>}
-      {!loading && messages.length > 0 && (
-        <table cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-              <th>To</th>
-              <th>Status</th>
-              <th>Source</th>
-              <th>Sent at</th>
-            </tr>
-          </thead>
-          <tbody>
-            {messages.map((m) => (
-              <tr key={m.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td>{m.to_number}</td>
-                <td>{m.status}</td>
-                <td>{m.source}</td>
-                <td>{new Date(m.created_at).toLocaleString()}</td>
+      <div className="table-wrap">
+        {loading && <div className="empty-state">Loading…</div>}
+        {!loading && messages.length === 0 && <div className="empty-state">No messages sent yet.</div>}
+        {!loading && messages.length > 0 && (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>To</th>
+                <th>Status</th>
+                <th>Source</th>
+                <th>Sent at</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </main>
+            </thead>
+            <tbody>
+              {messages.map((m) => (
+                <tr key={m.id}>
+                  <td className="mono">{m.to_number}</td>
+                  <td>
+                    <StatusBadge status={m.status} />
+                  </td>
+                  <td>{m.source}</td>
+                  <td className="mono">{new Date(m.created_at).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
   );
 }

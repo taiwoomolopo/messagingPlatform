@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabaseClient";
+import { Brand } from "@/components/Brand";
 
 const ENGINE_URL = process.env.NEXT_PUBLIC_ENGINE_API_URL ?? "http://localhost:4000";
 
@@ -22,13 +23,7 @@ export default function SignupPage() {
     const { data, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
-      options: {
-        // Uses whatever origin the signup form is actually running on — localhost in dev,
-        // the real Vercel URL in production — so this doesn't need per-environment code
-        // changes. Still requires that origin to be in Supabase's Redirect URLs allow list
-        // (Authentication → URL Configuration), or Supabase will reject the redirect.
-        emailRedirectTo: `${window.location.origin}/auth/callback`,
-      },
+      options: { emailRedirectTo: `${window.location.origin}/auth/callback` },
     });
 
     if (signUpError || !data.user) {
@@ -37,7 +32,6 @@ export default function SignupPage() {
       return;
     }
 
-    // Create the pending account + link it to this new user (see routes/signup.ts on the engine).
     const res = await fetch(`${ENGINE_URL}/v1/signup`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -56,58 +50,50 @@ export default function SignupPage() {
 
   if (done) {
     return (
-      <main style={{ padding: 48, maxWidth: 480 }}>
-        <h1>Almost there</h1>
-        <p>
-          Your account has been created and is pending approval. Once approved (and your
-          pricing is set), you'll be able to log in and start sending.
-        </p>
-      </main>
+      <div className="auth-shell">
+        <div className="auth-card">
+          <div className="auth-brand">
+            <Brand />
+          </div>
+          <h1 style={{ fontSize: 20, marginBottom: 12 }}>Almost there</h1>
+          <p style={{ color: "var(--ink-muted)", fontSize: 14, lineHeight: 1.6 }}>
+            Check your email to confirm your address. Once that's done and your account is
+            approved, you'll be able to log in and start sending.
+          </p>
+        </div>
+      </div>
     );
   }
 
   return (
-    <main style={{ padding: 48, maxWidth: 400 }}>
-      <h1>Create your account</h1>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 12 }}>
-          <label>Business name</label>
-          <br />
-          <input
-            value={businessName}
-            onChange={(e) => setBusinessName(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
+    <div className="auth-shell">
+      <div className="auth-card">
+        <div className="auth-brand">
+          <Brand />
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>Email</label>
-          <br />
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>Password</label>
-          <br />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            minLength={6}
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-        <button type="submit" disabled={loading} style={{ padding: "8px 16px" }}>
-          {loading ? "Creating…" : "Sign up"}
-        </button>
-      </form>
-    </main>
+        <h1 style={{ fontSize: 20, marginBottom: 20 }}>Create your account</h1>
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>Business name</label>
+            <input value={businessName} onChange={(e) => setBusinessName(e.target.value)} required />
+          </div>
+          <div className="field">
+            <label>Email</label>
+            <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+          </div>
+          <div className="field">
+            <label>Password</label>
+            <input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} />
+          </div>
+          {error && <div className="alert alert-danger">{error}</div>}
+          <button type="submit" disabled={loading} className="btn btn-primary" style={{ width: "100%", justifyContent: "center" }}>
+            {loading ? "Creating…" : "Sign up"}
+          </button>
+        </form>
+        <p className="auth-footer-link">
+          Already have an account? <a href="/login">Log in</a>
+        </p>
+      </div>
+    </div>
   );
 }

@@ -1,16 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Plus } from "lucide-react";
 import { createClient } from "@/lib/supabaseClient";
 import { callEngine } from "@/lib/engineClient";
 
 type Sender = { id: string; label: string; status: string; created_at: string };
 
-/**
- * Lists this account's registered senders (read directly from Supabase — RLS-scoped) and lets
- * the user request a new one (goes through the engine, since there's deliberately no insert
- * policy for senders from the client — see supabase/migrations/0001_init.sql).
- */
+function StatusBadge({ status }: { status: string }) {
+  const variant = status === "active" ? "badge-success" : status === "disabled" ? "badge-danger" : "badge-warning";
+  return <span className={`badge ${variant}`}>{status}</span>;
+}
+
 export default function SendersPage() {
   const [senders, setSenders] = useState<Sender[]>([]);
   const [loading, setLoading] = useState(true);
@@ -48,45 +49,51 @@ export default function SendersPage() {
   }
 
   return (
-    <main style={{ padding: 48, maxWidth: 560 }}>
-      <h1>Senders</h1>
+    <>
+      <div className="page-header">
+        <div>
+          <h1>Senders</h1>
+          <p className="page-subtitle">Sender IDs registered on your account</p>
+        </div>
+      </div>
 
-      <form onSubmit={handleCreate} style={{ display: "flex", gap: 8, marginBottom: 24 }}>
-        <input
-          value={newLabel}
-          onChange={(e) => setNewLabel(e.target.value)}
-          placeholder="e.g. MyBrand"
-          required
-          style={{ flex: 1, padding: 8 }}
-        />
-        <button type="submit" disabled={creating} style={{ padding: "8px 16px" }}>
-          {creating ? "Requesting…" : "Request new sender"}
-        </button>
-      </form>
-      {error && <p style={{ color: "crimson" }}>{error}</p>}
+      <div className="card" style={{ marginBottom: 20, maxWidth: 520 }}>
+        <form onSubmit={handleCreate} style={{ display: "flex", gap: 8 }}>
+          <input value={newLabel} onChange={(e) => setNewLabel(e.target.value)} placeholder="e.g. MyBrand" required />
+          <button type="submit" disabled={creating} className="btn btn-primary" style={{ flexShrink: 0 }}>
+            <Plus size={15} />
+            {creating ? "Requesting…" : "Request sender"}
+          </button>
+        </form>
+      </div>
+      {error && <div className="alert alert-danger">{error}</div>}
 
-      {loading && <p>Loading…</p>}
-      {!loading && senders.length === 0 && <p>No senders yet.</p>}
-      {!loading && senders.length > 0 && (
-        <table cellPadding={8} style={{ borderCollapse: "collapse", width: "100%" }}>
-          <thead>
-            <tr style={{ textAlign: "left", borderBottom: "2px solid #ddd" }}>
-              <th>Label</th>
-              <th>Status</th>
-              <th>Requested</th>
-            </tr>
-          </thead>
-          <tbody>
-            {senders.map((s) => (
-              <tr key={s.id} style={{ borderBottom: "1px solid #eee" }}>
-                <td>{s.label}</td>
-                <td>{s.status}</td>
-                <td>{new Date(s.created_at).toLocaleString()}</td>
+      <div className="table-wrap">
+        {loading && <div className="empty-state">Loading…</div>}
+        {!loading && senders.length === 0 && <div className="empty-state">No senders yet — request one above.</div>}
+        {!loading && senders.length > 0 && (
+          <table className="data-table">
+            <thead>
+              <tr>
+                <th>Label</th>
+                <th>Status</th>
+                <th>Requested</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </main>
+            </thead>
+            <tbody>
+              {senders.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.label}</td>
+                  <td>
+                    <StatusBadge status={s.status} />
+                  </td>
+                  <td className="mono">{new Date(s.created_at).toLocaleString()}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
+    </>
   );
 }

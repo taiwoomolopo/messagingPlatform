@@ -162,8 +162,9 @@ this scaffold.
   send unlimited volume in a loop.
 - No account-level sender ID approval workflow beyond a status field — a sender request from
   the portal sits at `status = 'pending'` with nothing currently reviewing or activating it.
-- Portal has no styling system — it's plain inline styles to keep the scaffold's logic clear;
-  a real design pass is a separate piece of work.
+- Design system: sidebar-nav layout, design tokens in `src/app/globals.css` (navy/signal-green
+  palette, Space Grotesk/Inter/IBM Plex Mono type), reusable card/table/badge/button classes —
+  no CSS framework dependency, just plain CSS custom properties. `lucide-react` provides icons.
 - Admin bootstrap is manual SQL (see step 4 above) — fine for one or two admins, not a real
   admin-invite flow.
 

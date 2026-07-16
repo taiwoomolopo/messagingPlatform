@@ -3,15 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabaseClient";
+import { LogOut } from "lucide-react";
+import { Brand } from "@/components/Brand";
 
-/**
- * Same reasoning as dashboard/layout.tsx — redirect if there's no session at all, rather than
- * showing a page that just fails every fetch silently. Note this only checks for a logged-in
- * session, not admin status specifically — a non-admin who's logged in will still hit real
- * 403s from the engine's adminAuth middleware when the page's fetches run. That's an
- * acceptable gap for now (the API is still correctly locked down), but a nicer "you're not an
- * admin" message here is a reasonable follow-up.
- */
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const [checked, setChecked] = useState(false);
   const [email, setEmail] = useState<string | null>(null);
@@ -37,9 +31,9 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!checked) {
     return (
-      <main style={{ padding: 48 }}>
-        <p>Loading…</p>
-      </main>
+      <div style={{ padding: 44 }}>
+        <p style={{ color: "var(--ink-muted)" }}>Loading…</p>
+      </div>
     );
   }
 
@@ -48,19 +42,39 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <nav
         style={{
           display: "flex",
-          justifyContent: "flex-end",
+          justifyContent: "space-between",
           alignItems: "center",
-          gap: 12,
-          padding: "16px 48px",
-          borderBottom: "1px solid #ddd",
+          padding: "16px 44px",
+          borderBottom: "1px solid var(--border)",
+          background: "var(--surface)",
         }}
       >
-        {email && <span style={{ color: "#666", fontSize: 14 }}>{email}</span>}
-        <button onClick={handleLogout} style={{ padding: "6px 12px" }}>
-          Log out
-        </button>
+        <div style={{ display: "flex", alignItems: "center", gap: 10, color: "var(--ink)" }}>
+          <Brand size={18} />
+          <span
+            style={{
+              fontSize: 11,
+              fontWeight: 600,
+              letterSpacing: "0.04em",
+              color: "var(--accent-ink)",
+              background: "#e4f7f1",
+              padding: "2px 8px",
+              borderRadius: 999,
+              textTransform: "uppercase",
+            }}
+          >
+            Admin
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 14, alignItems: "center" }}>
+          {email && <span style={{ color: "var(--ink-muted)", fontSize: 13.5 }}>{email}</span>}
+          <button onClick={handleLogout} className="btn btn-ghost">
+            <LogOut size={15} />
+            Log out
+          </button>
+        </div>
       </nav>
-      {children}
+      <div style={{ padding: "36px 44px" }}>{children}</div>
     </div>
   );
 }

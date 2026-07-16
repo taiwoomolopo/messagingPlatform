@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Megaphone } from "lucide-react";
 import { callEngine } from "@/lib/engineClient";
 
 type BlastResult = { total: number; succeeded: number; failed: number; sampleErrors: string[] };
@@ -36,51 +37,48 @@ export default function BlastPage() {
   }
 
   return (
-    <main style={{ padding: 48, maxWidth: 560 }}>
-      <h1>Send a blast</h1>
-      <p style={{ color: "#666" }}>
-        This dispatches one at a time and can take a while for large lists — see the note in
-        services/engine/src/routes/portal.ts about moving this to a background job before real
-        production volume.
-      </p>
-      <form onSubmit={handleSubmit}>
-        <div style={{ marginBottom: 12 }}>
-          <label>Recipients (one per line, or comma-separated) — {recipientList.length} detected</label>
-          <br />
-          <textarea
-            value={recipients}
-            onChange={(e) => setRecipients(e.target.value)}
-            required
-            rows={8}
-            placeholder={"+2348012345678\n+2348098765432"}
-            style={{ width: "100%", padding: 8 }}
-          />
+    <>
+      <div className="page-header">
+        <div>
+          <h1>Send a blast</h1>
+          <p className="page-subtitle">Sends to every recipient one at a time — large lists can take a while</p>
         </div>
-        <div style={{ marginBottom: 12 }}>
-          <label>Message</label>
-          <br />
-          <textarea
-            value={body}
-            onChange={(e) => setBody(e.target.value)}
-            required
-            maxLength={1600}
-            rows={4}
-            style={{ width: "100%", padding: 8 }}
-          />
-        </div>
-        {error && <p style={{ color: "crimson" }}>{error}</p>}
-        <button type="submit" disabled={loading || recipientList.length === 0} style={{ padding: "8px 16px" }}>
-          {loading ? "Sending…" : `Send to ${recipientList.length} recipients`}
-        </button>
-      </form>
+      </div>
+
+      <div className="card form-card">
+        <form onSubmit={handleSubmit}>
+          <div className="field">
+            <label>Recipients — {recipientList.length} detected</label>
+            <textarea
+              value={recipients}
+              onChange={(e) => setRecipients(e.target.value)}
+              required
+              rows={8}
+              placeholder={"+2348012345678\n+2348098765432"}
+            />
+            <div className="field-hint">One per line, or comma-separated</div>
+          </div>
+          <div className="field">
+            <label>Message</label>
+            <textarea value={body} onChange={(e) => setBody(e.target.value)} required maxLength={1600} rows={4} />
+          </div>
+          {error && <div className="alert alert-danger">{error}</div>}
+          <button type="submit" disabled={loading || recipientList.length === 0} className="btn btn-primary">
+            <Megaphone size={15} />
+            {loading ? "Sending…" : `Send to ${recipientList.length} recipients`}
+          </button>
+        </form>
+      </div>
 
       {result && (
-        <div style={{ marginTop: 24, border: "1px solid #ddd", borderRadius: 8, padding: 16 }}>
-          <p>
-            {result.succeeded} succeeded, {result.failed} failed, out of {result.total}.
-          </p>
+        <div className="card" style={{ marginTop: 20, maxWidth: 480 }}>
+          <div style={{ display: "flex", gap: 10, marginBottom: result.sampleErrors.length > 0 ? 12 : 0 }}>
+            <span className="badge badge-success">{result.succeeded} succeeded</span>
+            {result.failed > 0 && <span className="badge badge-danger">{result.failed} failed</span>}
+            <span className="badge badge-neutral">{result.total} total</span>
+          </div>
           {result.sampleErrors.length > 0 && (
-            <ul>
+            <ul style={{ margin: 0, paddingLeft: 18, fontSize: 13.5, color: "var(--ink-muted)" }}>
               {result.sampleErrors.map((e, i) => (
                 <li key={i}>{e}</li>
               ))}
@@ -88,6 +86,6 @@ export default function BlastPage() {
           )}
         </div>
       )}
-    </main>
+    </>
   );
 }
